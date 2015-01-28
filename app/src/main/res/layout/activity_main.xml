@@ -7,8 +7,8 @@
 
     <ImageView
         android:id="@+id/frame"
-        android:layout_width="640px"
-        android:layout_height="480px" />
+        android:layout_width="400dp"
+        android:layout_height="300dp" />
 
     <TextView
         android:id="@+id/mytext"

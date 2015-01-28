@@ -81,10 +81,12 @@ JNIEXPORT jstring JNICALL Java_com_example_chengang_myapplication_MainActivity_g
         AVFrame * pFrame = av_frame_alloc();
 
         // 初始化一个RGB帧内存空间
+        int target_width = 512;
+        int target_height = 300;
         AVFrame * pFrameRGB = av_frame_alloc();
-        int buffBytes = avpicture_get_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
+        int buffBytes = avpicture_get_size(AV_PIX_FMT_RGB24, target_width, target_height);
         uint8_t * buffer = (uint8_t *) av_malloc( buffBytes * sizeof(uint8_t) );
-        avpicture_fill( (AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
+        avpicture_fill( (AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24, target_width, target_height);
 
         // 拿到Java中Bitmap的引用
         AndroidBitmapInfo  bitMapInfo;
@@ -103,7 +105,7 @@ JNIEXPORT jstring JNICALL Java_com_example_chengang_myapplication_MainActivity_g
         int readVideoFrameNum = 0;
         int isDecodeSucc = 0;
 
-        while (readVideoFrameNum < 40)
+        while (readVideoFrameNum == 0)
         {
             av_read_frame(input_context, &packet);
             if(packet.stream_index==videoStream)
@@ -111,14 +113,15 @@ JNIEXPORT jstring JNICALL Java_com_example_chengang_myapplication_MainActivity_g
                 avcodec_decode_video2(pCodecCtx, pFrame, &isDecodeSucc, &packet);
                 if (isDecodeSucc)
                 {
-                    int target_width = 640;
-                    int target_height = 480;
                     img_convert_ctx = sws_getContext(
                         pCodecCtx->width,   pCodecCtx->height,  pCodecCtx->pix_fmt,
-                        pCodecCtx->width,   pCodecCtx->height,      AV_PIX_FMT_RGB24,
-//                        target_width,       target_height,      AV_PIX_FMT_RGB24,
+                        target_width,       target_height,      AV_PIX_FMT_RGB24,
                         SWS_BICUBIC, NULL, NULL, NULL);
-                    sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
+                    if(img_convert_ctx == NULL) {
+                        LOG("could not initialize conversion context\n");
+                        return;
+                    }
+                    int x = sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
 
                     fill_bitmap(&bitMapInfo, pixels_lock, pFrameRGB);
                     readVideoFrameNum++;
